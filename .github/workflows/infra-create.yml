@@ -56,11 +56,12 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        id: plan
+        working-directory: terraform
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
+        working-directory: terraform
         run: terraform apply -auto-approve tfplan
 
       - name: Save Terraform Output
