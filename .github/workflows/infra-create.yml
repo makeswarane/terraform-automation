@@ -24,7 +24,7 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  TF_DIR: terraform               # 👈 change if your .tf files are in another folder
+  TF_DIR: terraform               
   TF_STATE_BUCKET: ${{ secrets.TF_BUCKET }}
   TF_LOCK_TABLE: ${{ secrets.TF_LOCK_TABLE }}
 
