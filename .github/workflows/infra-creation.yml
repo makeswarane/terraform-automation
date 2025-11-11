@@ -1,4 +1,4 @@
-name: Terraform Infra Provision
+name: Terraform Infra Provision.
 
 on:
   push:
