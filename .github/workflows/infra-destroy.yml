@@ -5,9 +5,9 @@ on:
 
 env:
   AWS_REGION: ap-south-1        # 🔹 AWS region
-  TF_BUCKET: "<YOUR-S3-BUCKET-NAME>"  # 🔹 S3 bucket for Terraform state
+  TF_BUCKET: "terraform-automation"  # 🔹 S3 bucket for Terraform state
   TF_KEY: "terraform/state.tfstate"
-  TF_LOCK_TABLE: "<YOUR-LOCK-TABLE>"
+  TF_LOCK_TABLE: "myapp-terraform-lock"
   EC2_USER: ubuntu              # 🔹 If you need SSH later
   EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
   EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
