@@ -1,0 +1,194 @@
+name: App CI/CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Terraform Infra Provision"]
+    types:
+      - completed
+  push:
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'package*.json'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'package*.json'
+
+env:
+  EC2_USER: ubuntu
+  AWS_REGION: ap-south-1
+  DEV_PORT: 8081
+  STAGING_PORT: 8082
+  PROD_PORT: 8083
+
+jobs:
+
+  # ------------------- 1️⃣ Test Stage -------------------
+  test:
+    name: Run Angular Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Unit & Integration Tests
+        run: |
+          npm run test -- --watch=false --browsers=ChromeHeadless
+        continue-on-error: false
+
+      - name: Archive Test Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report
+          path: ./test-results
+
+  # ------------------- 2️⃣ Build & Push Docker Images -------------------
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & Push Docker Images for Dev, Staging, Prod
+        run: |
+          for ENV in dev staging prod; do
+            docker build \
+              --build-arg BUILD_ENV=$ENV \
+              -t ${{ secrets.DOCKERHUB_USERNAME }}/myapp:$ENV .
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/myapp:$ENV
+          done
+
+  # ------------------- 3️⃣ Deploy to EC2 (Dev & Staging) -------------------
+  deploy-dev-staging:
+    name: Deploy to EC2 (Dev & Staging)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > myapp.pem
+          chmod 400 myapp.pem
+
+      - name: Fetch Terraform Output (EC2 IP)
+        run: |
+          curl -LJO ${{ secrets.TF_OUTPUT_JSON_URL }}
+          export EC2_IP=$(jq -r '.ec2_public_ip.value' tf_output.json)
+          echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV
+
+      - name: Deploy Docker Containers
+        run: |
+          ssh -o StrictHostKeyChecking=no -i myapp.pem ${{ env.EC2_USER }}@${{ env.EC2_IP }} << 'EOF'
+            sudo apt-get update -y
+            sudo apt-get install -y docker.io
+            sudo systemctl enable docker
+            sudo systemctl start docker
+
+            # Pull images
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp:dev
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp:staging
+
+            # Stop/remove old containers
+            docker stop dev staging || true
+            docker rm dev staging || true
+
+            # Run containers
+            docker run -d --name dev -p 8081:80 ${{ secrets.DOCKERHUB_USERNAME }}/myapp:dev
+            docker run -d --name staging -p 8082:80 ${{ secrets.DOCKERHUB_USERNAME }}/myapp:staging
+          EOF
+
+  # ------------------- 4️⃣ Manual Approval for Prod -------------------
+  approve-prod:
+    name: Manual Approval for Production
+    runs-on: ubuntu-latest
+    needs: deploy-dev-staging
+    steps:
+      - name: Approval
+        uses: hmarr/auto-approve-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ------------------- 5️⃣ Deploy to Production -------------------
+  deploy-prod:
+    name: Deploy to EC2 (Production)
+    runs-on: ubuntu-latest
+    needs: approve-prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > myapp.pem
+          chmod 400 myapp.pem
+
+      - name: Fetch Terraform Output (EC2 IP)
+        run: |
+          curl -LJO ${{ secrets.TF_OUTPUT_JSON_URL }}
+          export EC2_IP=$(jq -r '.ec2_public_ip.value' tf_output.json)
+          echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV
+
+      - name: Deploy Production Docker
+        run: |
+          ssh -o StrictHostKeyChecking=no -i myapp.pem ${{ env.EC2_USER }}@${{ env.EC2_IP }} << 'EOF'
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp:prod
+            docker stop prod || true
+            docker rm prod || true
+            docker run -d --name prod -p 8083:80 ${{ secrets.DOCKERHUB_USERNAME }}/myapp:prod
+          EOF
+
+  # ------------------- 6️⃣ Email Notifications -------------------
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [test, build-and-push, deploy-dev-staging, deploy-prod]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download Test Report
+        uses: actions/download-artifact@v3
+        with:
+          name: test-report
+          path: ./test-results
+
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "CI/CD Pipeline ${{ job.status }} for ${{ github.repository }} @ ${{ github.ref }}"
+          body: |
+            Hello Team,
+
+            The CI/CD pipeline for repository `${{ github.repository }}` on branch `${{ github.ref }}` has completed.
+
+            Status: ${{ job.status }}
+
+            You can download the test report here: ./test-results
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ${{ secrets.EMAIL_USERNAME }}
