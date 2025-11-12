@@ -25,7 +25,7 @@ env:
   STAGING_PORT: 8082
   PROD_PORT: 8083
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  EC2_IP: 15.206.123.27
+  EC2_IP: ${{ secrets.EC2_IP }}
 jobs:
 
   # ------------------- 1️⃣ Test Stage -------------------
