@@ -8,7 +8,7 @@ RUN npm install
 
 COPY . .
 
-# Default build environment
+# Default build environment 
 ARG BUILD_ENV=dev
 
 # Build Angular app based on BUILD_ENV 
