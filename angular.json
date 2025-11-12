@@ -20,9 +20,7 @@
             "outputPath": "dist/myapp",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -31,9 +29,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "styles": ["src/styles.scss"],
             "scripts": []
           },
           "configurations": {
@@ -54,19 +50,15 @@
             },
             "development": {
               "optimization": false,
-              "extractLicenses": false,
               "sourceMap": true
             },
-            "dev": {                         
-              "optimization": false,
-              "extractLicenses": false,
+            "dev": {
               "sourceMap": true,
-              "buildOptimizer": false,
               "outputPath": "dist/myapp-dev",
               "fileReplacements": [
                 {
-                   "replace": "src/environments/environment.ts",
-                   "with": "src/environments/environment.dev.ts"
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.dev.ts"
                 }
               ]
             }
@@ -81,6 +73,9 @@
             },
             "development": {
               "buildTarget": "myapp:build:development"
+            },
+            "dev": {
+              "buildTarget": "myapp:build:dev"
             }
           },
           "defaultConfiguration": "development"
@@ -91,10 +86,7 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
+            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -103,9 +95,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
+            "styles": ["src/styles.scss"],
             "scripts": []
           }
         }
