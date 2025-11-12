@@ -5,7 +5,11 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 ARG BUILD_ENV=dev
-RUN npm run build -- --configuration $BUILD_ENV
+RUN if [ "$BUILD_ENV" = "dev" ]; then \
+      npm run build -- --configuration dev; \
+    else \
+      npm run build -- --configuration production; \
+    fi
 
 # ---------- Stage 2: Serve ----------
 FROM nginx:alpine
