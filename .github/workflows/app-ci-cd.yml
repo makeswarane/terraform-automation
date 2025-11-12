@@ -142,23 +142,23 @@ jobs:
           echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV
       - name: Deploy Docker Containers
         run: |
-          ssh -o StrictHostKeyChecking=no -i myapp.pem ${{ env.EC2_USER }}@${{ env.EC2_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i myapp.pem ubuntu@$EC2_IP << 'EOF'
             sudo apt-get update -y
             sudo apt-get install -y docker.io
             sudo systemctl enable docker
             sudo systemctl start docker
 
-            # Pull images
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp:dev
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/myapp:staging
+           # Pull images
+            docker pull $DOCKERHUB_USERNAME/myapp:dev
+            docker pull $DOCKERHUB_USERNAME/myapp:staging
 
             # Stop/remove old containers
             docker stop dev staging || true
             docker rm dev staging || true
 
             # Run containers
-            docker run -d --name dev -p 8081:80 ${{ secrets.DOCKERHUB_USERNAME }}/myapp:dev
-            docker run -d --name staging -p 8082:80 ${{ secrets.DOCKERHUB_USERNAME }}/myapp:staging
+            docker run -d --name dev -p 8081:80 $DOCKERHUB_USERNAME/myapp:dev
+            docker run -d --name staging -p 8082:80 $DOCKERHUB_USERNAME/myapp:staging
           EOF
 
   # ------------------- 4️⃣ Manual Approval for Prod -------------------

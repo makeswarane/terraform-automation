@@ -27,7 +27,7 @@ ARG BUILD_ENV=dev
 # Remove default nginx html
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy built Angular app from builder stage  
+# Copy built Angular app from builder stage
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
 # If you want only the selected folder, you can do this:
