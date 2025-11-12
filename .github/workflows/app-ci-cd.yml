@@ -118,7 +118,7 @@ jobs:
 
       - name: Deploy Docker Containers
         run: |
-          ssh -o StrictHostKeyChecking=no -i myapp.pem ubuntu@$EC2_IP << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i myapp.pem ubuntu@$EC2_IP << EOF
             sudo apt-get update -y
             sudo apt-get install -y docker.io
             sudo systemctl enable docker

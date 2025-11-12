@@ -11,7 +11,7 @@ COPY . .
 # Default build environment
 ARG BUILD_ENV=dev
 
-# Build Angular app based on BUILD_ENV
+# Build Angular app based on BUILD_ENV 
 RUN if [ "$BUILD_ENV" = "production" ]; then \
       npm run build -- --configuration production; \
     else \
