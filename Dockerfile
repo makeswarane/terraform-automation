@@ -12,7 +12,7 @@ FROM nginx:alpine
 ARG BUILD_ENV
 
 # Copy built files
-COPY --from=builder /app/dist/myapp-${BUILD_ENV} /usr/share/nginx/html
+COPY --from=builder /app/dist/myapp /usr/share/nginx/html
 
 # Copy custom nginx config 
 COPY nginx.conf /etc/nginx/nginx.conf

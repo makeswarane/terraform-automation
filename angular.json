@@ -53,6 +53,8 @@
               "sourceMap": true
             },
             "dev": {
+              "optimization": false,
+              "extractLicenses": false,
               "sourceMap": true,
               "outputPath": "dist/myapp-dev",
               "fileReplacements": [
